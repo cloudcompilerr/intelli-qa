@@ -28,7 +28,7 @@ public class ServiceInteraction {
     
     @NotNull(message = "Timestamp cannot be null")
     @JsonProperty("timestamp")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Instant timestamp;
     
     @JsonProperty("request")

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.agentic.e2etester.model.validation.ValidTestExecutionPlan;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.Objects;
  * Represents a complete test execution plan containing all steps and configuration
  * needed to execute an end-to-end test scenario across microservices.
  */
+@ValidTestExecutionPlan
 public class TestExecutionPlan {
     
     @NotBlank(message = "Test ID cannot be blank")
@@ -47,7 +49,7 @@ public class TestExecutionPlan {
     private List<AssertionRule> assertions;
     
     @JsonProperty("createdAt")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Instant createdAt;
     
     @JsonProperty("estimatedDuration")
