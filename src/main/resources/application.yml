@@ -1,0 +1,92 @@
+spring:
+  application:
+    name: agentic-e2e-tester
+  
+  # Spring AI Configuration for local Ollama
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: codellama:7b
+        options:
+          temperature: 0.1
+          top-p: 0.9
+          max-tokens: 2000
+    vectorstore:
+      pgvector:
+        host: localhost
+        port: 5432
+        database: vectordb
+        username: postgres
+        password: postgres
+        schema-name: ai
+        table-name: vector_store
+        dimensions: 1536
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: agentic-e2e-tester
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+
+  # Couchbase Configuration
+  couchbase:
+    connection-string: couchbase://localhost
+    username: Administrator
+    password: password
+    bucket-name: test-data
+
+  # Web Configuration
+  webflux:
+    base-path: /api/v1
+
+# Management and Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Application Configuration
+agentic:
+  testing:
+    execution:
+      timeout: 300s
+      retry-attempts: 3
+      parallel-execution: true
+    correlation:
+      header-name: X-Correlation-ID
+    memory:
+      pattern-storage-enabled: true
+      max-patterns: 1000
+    monitoring:
+      real-time-reporting: true
+      metrics-collection: true
+
+# Logging Configuration
+logging:
+  level:
+    com.agentic: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.kafka: INFO
+    com.couchbase: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/agentic-e2e-tester.log

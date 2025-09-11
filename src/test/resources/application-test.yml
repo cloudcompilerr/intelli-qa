@@ -1,0 +1,38 @@
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: codellama:7b
+    vectorstore:
+      pgvector:
+        host: localhost
+        port: 5433
+        database: test_vectordb
+        username: test
+        password: test
+
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+
+  couchbase:
+    connection-string: couchbase://localhost:8091
+    username: testuser
+    password: testpass
+    bucket-name: test-bucket
+
+agentic:
+  testing:
+    execution:
+      timeout: 30s
+      retry-attempts: 1
+      parallel-execution: false
+    memory:
+      pattern-storage-enabled: false
+
+logging:
+  level:
+    com.agentic: DEBUG
+    org.springframework.ai: WARN
+    org.springframework.kafka: WARN
+    com.couchbase: WARN
