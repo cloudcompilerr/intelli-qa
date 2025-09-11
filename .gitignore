@@ -45,6 +45,7 @@ buildNumber.properties
 .classpath
 .project
 .settings/
+.kiro/
 
 # Spring Boot
 .spring-boot-devtools.properties
