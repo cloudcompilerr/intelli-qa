@@ -110,6 +110,9 @@ agentic:
     monitoring:
       real-time-reporting: true
       metrics-collection: true
+      dashboard-refresh-interval: 5s
+      metrics-retention-hours: 24
+      alert-retention-hours: 72
   
   # REST API Integration Configuration
   rest:

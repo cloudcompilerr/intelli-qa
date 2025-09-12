@@ -1,31 +1,47 @@
 package com.agentic.e2etester.model;
 
 /**
- * Represents the health status of a discovered service
+ * Enumeration of service health statuses used in decision-making contexts.
  */
 public enum ServiceStatus {
+    
     /**
-     * Service is healthy and responding normally
+     * Service is healthy and responding normally.
      */
     HEALTHY,
     
     /**
-     * Service is responding but may have degraded performance
+     * Service is experiencing degraded performance but still functional.
      */
     DEGRADED,
     
     /**
-     * Service is not responding or returning errors
+     * Service is unhealthy but may still be partially functional.
      */
     UNHEALTHY,
     
     /**
-     * Service status is unknown (not yet checked or unreachable)
+     * Service is completely unavailable.
+     */
+    DOWN,
+    
+    /**
+     * Service status is unknown or cannot be determined.
      */
     UNKNOWN,
     
     /**
-     * Service is temporarily unavailable (maintenance, deployment, etc.)
+     * Service is in maintenance mode.
      */
-    MAINTENANCE
+    MAINTENANCE,
+    
+    /**
+     * Service is starting up.
+     */
+    STARTING,
+    
+    /**
+     * Service is shutting down.
+     */
+    STOPPING
 }
