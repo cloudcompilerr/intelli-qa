@@ -1,5 +1,6 @@
 package com.agentic.e2etester.ai;
 
+import com.agentic.e2etester.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,11 +45,10 @@ class TestScenarioParserTest {
             {
               "testId": "test-001",
               "scenario": "When a customer places an order, then the order should be processed and inventory should be updated",
-              "businessFlow": "Order processing flow",
               "steps": [
                 {
                   "stepId": "step-1",
-                  "type": "REST_CALL",
+                  "type": "rest_call",
                   "description": "Create order",
                   "targetService": "order-service",
                   "inputData": {"customerId": "123", "productId": "456"},
@@ -77,25 +77,24 @@ class TestScenarioParserTest {
             .thenReturn(new LLMService.LLMResponse(llmResponse, 1000L, true));
 
         // Act
-        TestScenarioParser.TestExecutionPlan plan = parser.parseScenario(scenario);
+        TestExecutionPlan plan = parser.parseScenario(scenario);
 
         // Assert
         assertNotNull(plan);
         assertEquals("test-001", plan.getTestId());
         assertEquals(scenario, plan.getScenario());
-        assertEquals("Order processing flow", plan.getBusinessFlow());
         assertEquals(1, plan.getSteps().size());
         assertEquals(1, plan.getAssertions().size());
         assertNotNull(plan.getTestData());
 
-        TestScenarioParser.TestStep step = plan.getSteps().get(0);
+        TestStep step = plan.getSteps().get(0);
         assertEquals("step-1", step.getStepId());
-        assertEquals(TestScenarioParser.StepType.REST_CALL, step.getType());
+        assertEquals(StepType.REST_CALL, step.getType());
         assertEquals("Create order", step.getDescription());
         assertEquals("order-service", step.getTargetService());
 
-        TestScenarioParser.Assertion assertion = plan.getAssertions().get(0);
-        assertEquals(TestScenarioParser.AssertionType.BUSINESS, assertion.getType());
+        AssertionRule assertion = plan.getAssertions().get(0);
+        assertEquals(AssertionType.EQUALS, assertion.getType()); // Mapped from BUSINESS category
         assertEquals("Order should be created", assertion.getDescription());
         assertEquals("order.status == 'CREATED'", assertion.getCondition());
         assertEquals("CREATED", assertion.getExpectedValue());
@@ -107,7 +106,7 @@ class TestScenarioParserTest {
     @Test
     void parseScenario_LLMFails_ThrowsTestScenarioParsingException() {
         // Arrange
-        String scenario = "Test scenario";
+        String scenario = "Given a customer wants to place an order, when they submit the order, then the system should process it successfully";
         String template = "Test template";
         String errorMessage = "LLM connection failed";
 
@@ -122,14 +121,13 @@ class TestScenarioParserTest {
         );
 
         assertNotNull(exception.getMessage());
-        // The exception message should contain information about the failure
-        assertTrue(exception.getMessage().length() > 0);
+        assertTrue(exception.getMessage().contains("Failed to parse test scenario"));
     }
 
     @Test
     void parseScenario_InvalidJSON_ThrowsTestScenarioParsingException() {
         // Arrange
-        String scenario = "Test scenario";
+        String scenario = "Given a customer wants to place an order, when they submit the order, then the system should process it successfully";
         String template = "Test template";
         String invalidJson = "{ invalid json }";
 
@@ -250,22 +248,19 @@ class TestScenarioParserTest {
         // Arrange
         String testId = "test-123";
         String scenario = "Test scenario";
-        String businessFlow = "Test flow";
-        List<TestScenarioParser.TestStep> steps = List.of();
-        List<TestScenarioParser.Assertion> assertions = List.of();
+        List<TestStep> steps = List.of();
+        TestConfiguration configuration = new TestConfiguration();
         Map<String, Object> testData = Map.of("key", "value");
 
         // Act
-        TestScenarioParser.TestExecutionPlan plan = new TestScenarioParser.TestExecutionPlan(
-            testId, scenario, businessFlow, steps, assertions, testData
-        );
+        TestExecutionPlan plan = new TestExecutionPlan(testId, scenario, steps, configuration);
+        plan.setTestData(testData);
 
         // Assert
         assertEquals(testId, plan.getTestId());
         assertEquals(scenario, plan.getScenario());
-        assertEquals(businessFlow, plan.getBusinessFlow());
         assertEquals(steps, plan.getSteps());
-        assertEquals(assertions, plan.getAssertions());
+        assertEquals(configuration, plan.getConfiguration());
         assertEquals(testData, plan.getTestData());
     }
 
@@ -302,21 +297,25 @@ class TestScenarioParserTest {
     @Test
     void stepType_EnumValues_AreCorrect() {
         // Act & Assert
-        TestScenarioParser.StepType[] types = TestScenarioParser.StepType.values();
-        assertEquals(4, types.length);
-        assertTrue(List.of(types).contains(TestScenarioParser.StepType.KAFKA_EVENT));
-        assertTrue(List.of(types).contains(TestScenarioParser.StepType.REST_CALL));
-        assertTrue(List.of(types).contains(TestScenarioParser.StepType.DATABASE_CHECK));
-        assertTrue(List.of(types).contains(TestScenarioParser.StepType.ASSERTION));
+        StepType[] types = StepType.values();
+        assertEquals(7, types.length);
+        assertTrue(List.of(types).contains(StepType.KAFKA_EVENT));
+        assertTrue(List.of(types).contains(StepType.REST_CALL));
+        assertTrue(List.of(types).contains(StepType.DATABASE_CHECK));
+        assertTrue(List.of(types).contains(StepType.ASSERTION));
+        assertTrue(List.of(types).contains(StepType.WAIT));
+        assertTrue(List.of(types).contains(StepType.SETUP));
+        assertTrue(List.of(types).contains(StepType.CLEANUP));
     }
 
     @Test
     void assertionType_EnumValues_AreCorrect() {
         // Act & Assert
-        TestScenarioParser.AssertionType[] types = TestScenarioParser.AssertionType.values();
-        assertEquals(3, types.length);
-        assertTrue(List.of(types).contains(TestScenarioParser.AssertionType.BUSINESS));
-        assertTrue(List.of(types).contains(TestScenarioParser.AssertionType.TECHNICAL));
-        assertTrue(List.of(types).contains(TestScenarioParser.AssertionType.DATA));
+        AssertionType[] types = AssertionType.values();
+        assertEquals(13, types.length);
+        assertTrue(List.of(types).contains(AssertionType.EQUALS));
+        assertTrue(List.of(types).contains(AssertionType.NOT_EQUALS));
+        assertTrue(List.of(types).contains(AssertionType.CONTAINS));
+        assertTrue(List.of(types).contains(AssertionType.CUSTOM));
     }
 }

@@ -33,11 +33,10 @@ public class PromptTemplates {
             {
               "testId": "unique-test-identifier",
               "scenario": "original scenario text",
-              "businessFlow": "high-level business flow description",
               "steps": [
                 {
                   "stepId": "step-1",
-                  "type": "KAFKA_EVENT|REST_CALL|DATABASE_CHECK|ASSERTION",
+                  "type": "kafka_event|rest_call|database_check|assertion|wait|setup|cleanup",
                   "description": "what this step does",
                   "targetService": "service name or kafka topic",
                   "inputData": {},
@@ -60,12 +59,22 @@ public class PromptTemplates {
               }
             }
             
+            Step Types:
+            - kafka_event: Send or consume Kafka messages
+            - rest_call: Make HTTP requests to microservices
+            - database_check: Validate data in Couchbase
+            - assertion: Validate business logic or technical conditions
+            - wait: Wait for async operations to complete
+            - setup: Initialize test data or environment
+            - cleanup: Clean up test artifacts
+            
             Focus on:
             1. Breaking down the scenario into discrete, testable steps
             2. Identifying the correct sequence of microservice interactions
             3. Specifying appropriate Kafka events and REST API calls
             4. Including data validation checkpoints
             5. Defining clear success criteria
+            6. Using realistic service names like: order-service, payment-service, inventory-service, fulfillment-service
             
             Respond only with valid JSON, no additional text.
             """;
