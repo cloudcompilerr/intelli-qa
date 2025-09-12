@@ -64,6 +64,39 @@ management:
 
 # Application Configuration
 agentic:
+  # Service Discovery Configuration
+  service-discovery:
+    auto-discovery-enabled: true
+    health-check-interval: 30
+    discovery-interval: 60
+    health-check-timeout: 5
+    actuator-health-path: /actuator/health
+    discovery-mechanisms:
+      - actuator
+      - configuration
+    predefined-services:
+      - service-id: order-service
+        service-name: Order Service
+        base-url: http://localhost:8081
+        version: "1.0.0"
+        metadata:
+          type: microservice
+          domain: order-management
+      - service-id: payment-service
+        service-name: Payment Service
+        base-url: http://localhost:8082
+        version: "1.0.0"
+        metadata:
+          type: microservice
+          domain: payment-processing
+      - service-id: inventory-service
+        service-name: Inventory Service
+        base-url: http://localhost:8083
+        version: "1.0.0"
+        metadata:
+          type: microservice
+          domain: inventory-management
+  
   testing:
     execution:
       timeout: 300s
