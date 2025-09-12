@@ -110,6 +110,21 @@ agentic:
     monitoring:
       real-time-reporting: true
       metrics-collection: true
+  
+  # REST API Integration Configuration
+  rest:
+    connection-timeout: 10000
+    read-timeout: 30000
+    write-timeout: 30000
+    max-connections: 100
+    max-connections-per-route: 20
+  
+  # Authentication Configuration
+  auth:
+    default-username: ${AGENTIC_AUTH_USERNAME:#{null}}
+    default-password: ${AGENTIC_AUTH_PASSWORD:#{null}}
+    default-token: ${AGENTIC_AUTH_TOKEN:#{null}}
+    default-api-key: ${AGENTIC_AUTH_API_KEY:#{null}}
 
 # Logging Configuration
 logging:
