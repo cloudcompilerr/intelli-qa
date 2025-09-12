@@ -91,6 +91,11 @@ public class TestConfiguration {
         this.properties = properties;
     }
     
+    // Utility methods
+    public boolean isStopOnFirstFailure() {
+        return failFast != null && failFast;
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

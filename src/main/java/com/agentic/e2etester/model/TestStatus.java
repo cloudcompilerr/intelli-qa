@@ -13,7 +13,10 @@ public enum TestStatus {
     FAILED("failed"),
     CANCELLED("cancelled"),
     TIMEOUT("timeout"),
-    SKIPPED("skipped");
+    SKIPPED("skipped"),
+    PAUSED("paused"),
+    PARTIAL_SUCCESS("partial_success"),
+    NOT_FOUND("not_found");
     
     private final String value;
     
@@ -37,11 +40,11 @@ public enum TestStatus {
     }
     
     public boolean isTerminal() {
-        return this == PASSED || this == FAILED || this == CANCELLED || this == TIMEOUT || this == SKIPPED;
+        return this == PASSED || this == FAILED || this == CANCELLED || this == TIMEOUT || this == SKIPPED || this == PARTIAL_SUCCESS;
     }
     
     public boolean isSuccessful() {
-        return this == PASSED;
+        return this == PASSED || this == PARTIAL_SUCCESS;
     }
     
     @Override

@@ -84,6 +84,19 @@ public class RetryPolicy {
         this.retryOnExceptions = retryOnExceptions;
     }
     
+    // Utility methods for execution engine
+    public Long getDelayMs() {
+        return initialDelayMs;
+    }
+    
+    public java.util.List<String> getRetryableExceptions() {
+        return retryOnExceptions != null ? java.util.Arrays.asList(retryOnExceptions) : null;
+    }
+    
+    public boolean isStopOnFailure() {
+        return maxAttempts != null && maxAttempts <= 1;
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
