@@ -17,7 +17,13 @@ public enum EventType {
     SERVICE_CALL("service_call"),
     ERROR_OCCURRED("error_occurred"),
     WARNING("warning"),
-    INFO("info");
+    INFO("info"),
+    KAFKA_MESSAGE_SENT("kafka_message_sent"),
+    KAFKA_MESSAGE_RECEIVED("kafka_message_received"),
+    KAFKA_MESSAGE_FAILED("kafka_message_failed"),
+    KAFKA_MONITORING_STARTED("kafka_monitoring_started"),
+    KAFKA_MONITORING_COMPLETED("kafka_monitoring_completed"),
+    KAFKA_MONITORING_FAILED("kafka_monitoring_failed");
     
     private final String value;
     

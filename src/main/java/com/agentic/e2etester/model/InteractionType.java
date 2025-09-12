@@ -10,6 +10,8 @@ public enum InteractionType {
     HTTP_REQUEST("http_request"),
     KAFKA_PRODUCE("kafka_produce"),
     KAFKA_CONSUME("kafka_consume"),
+    KAFKA_PRODUCER("kafka_producer"),
+    KAFKA_CONSUMER("kafka_consumer"),
     DATABASE_QUERY("database_query"),
     DATABASE_UPDATE("database_update"),
     HEALTH_CHECK("health_check"),
