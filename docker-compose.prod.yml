@@ -1,0 +1,207 @@
+# Production Docker Compose configuration
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  # Production overrides for Ollama
+  ollama:
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4'
+        reservations:
+          memory: 4G
+          cpus: '2'
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_MODELS=/root/.ollama/models
+      - OLLAMA_NUM_PARALLEL=4
+      - OLLAMA_MAX_LOADED_MODELS=2
+
+  # Production PostgreSQL with optimized settings
+  postgres:
+    environment:
+      POSTGRES_DB: vectordb_prod
+      POSTGRES_USER: agentic_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+
+  # Production Kafka with clustering support
+  kafka:
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,SSL:SSL
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092,SSL://kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.server.keystore.jks
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: kafka_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: kafka_ssl_key_creds
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.server.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: kafka_truststore_creds
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+      - ./ssl/kafka:/etc/kafka/secrets
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+
+  # Production Couchbase with security
+  couchbase:
+    environment:
+      - CLUSTER_NAME=agentic-prod-cluster
+      - COUCHBASE_ADMINISTRATOR_USERNAME=admin
+      - COUCHBASE_ADMINISTRATOR_PASSWORD_FILE=/run/secrets/couchbase_password
+    secrets:
+      - couchbase_password
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2'
+
+  # Production application configuration
+  agentic-tester:
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_OPTS=-Xmx4g -Xms2g -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/vectordb_prod
+      - SPRING_DATASOURCE_USERNAME=agentic_user
+      - SPRING_DATASOURCE_PASSWORD_FILE=/run/secrets/postgres_password
+      - COUCHBASE_USERNAME=admin
+      - COUCHBASE_PASSWORD_FILE=/run/secrets/couchbase_password
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+      - LOGGING_LEVEL_ROOT=WARN
+      - LOGGING_LEVEL_COM_AGENTIC=INFO
+      - AGENTIC_SECURITY_ENABLED=true
+      - AGENTIC_AUDIT_ENABLED=true
+    secrets:
+      - postgres_password
+      - couchbase_password
+      - api_key
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 6G
+          cpus: '4'
+        reservations:
+          memory: 2G
+          cpus: '1'
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
+
+  # Production Prometheus with persistent storage
+  prometheus:
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1'
+
+  # Production Grafana with security
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD_FILE=/run/secrets/grafana_password
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    secrets:
+      - grafana_password
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  # Production Redis with persistence and security
+  redis:
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+    environment:
+      - REDIS_PASSWORD_FILE=/run/secrets/redis_password
+    secrets:
+      - redis_password
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  # Production Nginx with SSL
+  nginx:
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/html:/usr/share/nginx/html
+      - /var/log/nginx:/var/log/nginx
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+# Production secrets
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  couchbase_password:
+    file: ./secrets/couchbase_password.txt
+  grafana_password:
+    file: ./secrets/grafana_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  api_key:
+    file: ./secrets/api_key.txt
+
+# Production networks with custom configuration
+networks:
+  default:
+    name: agentic-prod-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

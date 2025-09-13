@@ -34,6 +34,9 @@ public class TestConfiguration {
     @JsonProperty("properties")
     private Map<String, String> properties;
     
+    @JsonProperty("metadata")
+    private Map<String, Object> metadata;
+    
     // Default constructor
     public TestConfiguration() {
         this.defaultTimeoutMs = 30000L; // 30 seconds default
@@ -89,6 +92,14 @@ public class TestConfiguration {
     
     public void setProperties(Map<String, String> properties) {
         this.properties = properties;
+    }
+    
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+    
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
     }
     
     // Utility methods

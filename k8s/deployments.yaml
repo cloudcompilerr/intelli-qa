@@ -1,0 +1,406 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentic-tester
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: application
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agentic-e2e-tester
+      app.kubernetes.io/component: application
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agentic-e2e-tester
+        app.kubernetes.io/component: application
+        app.kubernetes.io/version: "1.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      serviceAccountName: agentic-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: agentic-tester
+        image: agentic-e2e-tester:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: management
+          containerPort: 8081
+          protocol: TCP
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: postgres-username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: postgres-password
+        - name: COUCHBASE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: couchbase-username
+        - name: COUCHBASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: couchbase-password
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: redis-password
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: api-key
+        - name: JAVA_OPTS
+          value: "-Xmx2g -Xms1g -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: logs-volume
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: management
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: management
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: management
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 12
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config-volume
+        configMap:
+          name: agentic-config
+      - name: logs-volume
+        emptyDir: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agentic-e2e-tester
+      app.kubernetes.io/component: ollama
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agentic-e2e-tester
+        app.kubernetes.io/component: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - name: http
+          containerPort: 11434
+          protocol: TCP
+        env:
+        - name: OLLAMA_HOST
+          value: "0.0.0.0"
+        - name: OLLAMA_MODELS
+          value: "/root/.ollama/models"
+        volumeMounts:
+        - name: ollama-data
+          mountPath: /root/.ollama
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+        livenessProbe:
+          httpGet:
+            path: /api/tags
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/tags
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: ollama-data
+        persistentVolumeClaim:
+          claimName: ollama-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agentic-e2e-tester
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agentic-e2e-tester
+        app.kubernetes.io/component: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: pgvector/pgvector:pg16
+        ports:
+        - name: postgres
+          containerPort: 5432
+          protocol: TCP
+        env:
+        - name: POSTGRES_DB
+          value: "vectordb"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: postgres-username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: agentic-secrets
+              key: postgres-password
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - $(POSTGRES_USER)
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - $(POSTGRES_USER)
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+      - name: init-scripts
+        configMap:
+          name: postgres-init-scripts
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agentic-e2e-tester
+      app.kubernetes.io/component: kafka
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agentic-e2e-tester
+        app.kubernetes.io/component: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:7.4.0
+        ports:
+        - name: kafka
+          containerPort: 9092
+          protocol: TCP
+        - name: kafka-internal
+          containerPort: 29092
+          protocol: TCP
+        env:
+        - name: KAFKA_BROKER_ID
+          value: "1"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: "zookeeper-service:2181"
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "PLAINTEXT://kafka-service:29092,PLAINTEXT_HOST://localhost:9092"
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: "1"
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "1"
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: "true"
+        volumeMounts:
+        - name: kafka-data
+          mountPath: /var/lib/kafka/data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          exec:
+            command:
+            - kafka-broker-api-versions
+            - --bootstrap-server
+            - localhost:9092
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - kafka-broker-api-versions
+            - --bootstrap-server
+            - localhost:9092
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: kafka-data
+        persistentVolumeClaim:
+          claimName: kafka-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agentic-e2e-tester
+      app.kubernetes.io/component: zookeeper
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agentic-e2e-tester
+        app.kubernetes.io/component: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: confluentinc/cp-zookeeper:7.4.0
+        ports:
+        - name: zookeeper
+          containerPort: 2181
+          protocol: TCP
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: "2181"
+        - name: ZOOKEEPER_TICK_TIME
+          value: "2000"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "echo ruok | nc localhost 2181 | grep imok"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "echo ruok | nc localhost 2181 | grep imok"
+          initialDelaySeconds: 10
+          periodSeconds: 5

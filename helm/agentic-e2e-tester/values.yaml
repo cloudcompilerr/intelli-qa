@@ -1,0 +1,402 @@
+# Default values for agentic-e2e-tester
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Application configuration
+app:
+  name: agentic-e2e-tester
+  version: "1.0.0"
+  
+image:
+  registry: docker.io
+  repository: agentic-e2e-tester
+  tag: "latest"
+  pullPolicy: Always
+  pullSecrets: []
+
+# Deployment configuration
+replicaCount: 2
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+  managementPort: 8081
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: agentic-tester.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: agentic-tls-secret
+      hosts:
+        - agentic-tester.local
+
+# Resource configuration
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 2Gi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Node selection
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+    - ALL
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Probes configuration
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: management
+  initialDelaySeconds: 120
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: management
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /actuator/health
+    port: management
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 12
+
+# Environment variables
+env:
+  SPRING_PROFILES_ACTIVE: "kubernetes"
+  JAVA_OPTS: "-Xmx2g -Xms1g -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
+# Configuration
+config:
+  application:
+    testing:
+      execution:
+        maxConcurrentTests: 10
+        defaultTimeout: "PT10M"
+        stepTimeout: "PT2M"
+      correlation:
+        timeout: "PT30S"
+        maxTraceDepth: 20
+      ai:
+        modelTimeout: "PT30S"
+        maxRetries: 3
+      security:
+        enabled: true
+        auditEnabled: true
+
+# Secrets configuration
+secrets:
+  create: true
+  postgresUsername: "agentic_user"
+  postgresPassword: "password123"
+  couchbaseUsername: "admin"
+  couchbasePassword: "password123"
+  redisPassword: "redispassword"
+  apiKey: "agentic-api-key-123"
+
+# Ollama LLM configuration
+ollama:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: ollama/ollama
+    tag: "latest"
+    pullPolicy: Always
+  
+  resources:
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+  
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 50Gi
+    accessMode: ReadWriteOnce
+  
+  models:
+    - codellama:7b
+    - mistral:7b
+
+# PostgreSQL configuration (using Bitnami chart)
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres123"
+    username: "agentic_user"
+    password: "password123"
+    database: "vectordb"
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    
+    initdb:
+      scripts:
+        init-vector-db.sql: |
+          CREATE EXTENSION IF NOT EXISTS vector;
+          CREATE TABLE IF NOT EXISTS test_patterns (
+            id SERIAL PRIMARY KEY,
+            pattern_name VARCHAR(255) NOT NULL,
+            pattern_data JSONB,
+            embedding vector(1536),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+# Kafka configuration (using Bitnami chart)
+kafka:
+  enabled: true
+  replicaCount: 1
+  
+  persistence:
+    enabled: true
+    size: 30Gi
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  
+  zookeeper:
+    enabled: true
+    replicaCount: 1
+    persistence:
+      enabled: true
+      size: 8Gi
+
+# Redis configuration (using Bitnami chart)
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: "redispassword"
+  
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+
+# Couchbase configuration
+couchbase:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: couchbase
+    tag: "enterprise-7.2.0"
+    pullPolicy: Always
+  
+  cluster:
+    name: "agentic-cluster"
+    username: "admin"
+    password: "password123"
+  
+  persistence:
+    enabled: true
+    storageClass: ""
+    size: 40Gi
+    accessMode: ReadWriteOnce
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+
+# Prometheus configuration (using community chart)
+prometheus:
+  enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+    
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+    
+    retention: "30d"
+  
+  alertmanager:
+    enabled: true
+    persistentVolume:
+      enabled: true
+      size: 2Gi
+
+# Grafana configuration (using Grafana chart)
+grafana:
+  enabled: true
+  adminPassword: "admin123"
+  
+  persistence:
+    enabled: true
+    size: 5Gi
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-server:80
+        access: proxy
+        isDefault: true
+  
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+# Network policies
+networkPolicy:
+  enabled: true
+  ingress:
+    enabled: true
+  egress:
+    enabled: true
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /actuator/prometheus
+  
+  prometheusRule:
+    enabled: true
+    rules:
+      - alert: AgenticTesterDown
+        expr: up{job="agentic-e2e-tester"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agentic E2E Tester is down"
+      
+      - alert: HighTestFailureRate
+        expr: rate(agentic_tests_failed_total[5m]) / rate(agentic_tests_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High test failure rate"
+
+# Backup configuration
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  retention: "7d"

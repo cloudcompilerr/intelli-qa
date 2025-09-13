@@ -49,6 +49,9 @@ public class StepResult {
     @JsonProperty("correlationId")
     private String correlationId;
     
+    @JsonProperty("details")
+    private String details;
+    
     // Default constructor
     public StepResult() {}
     
@@ -138,6 +141,14 @@ public class StepResult {
     
     public void setCorrelationId(String correlationId) {
         this.correlationId = correlationId;
+    }
+    
+    public String getDetails() {
+        return details;
+    }
+    
+    public void setDetails(String details) {
+        this.details = details;
     }
     
     // Utility methods

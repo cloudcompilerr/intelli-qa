@@ -1,0 +1,141 @@
+groups:
+  - name: agentic-recording-rules
+    interval: 30s
+    rules:
+      # Test Execution Recording Rules
+      - record: agentic:test_success_rate_5m
+        expr: sum(rate(agentic_tests_passed_total[5m])) / sum(rate(agentic_tests_total[5m]))
+        
+      - record: agentic:test_failure_rate_5m
+        expr: sum(rate(agentic_tests_failed_total[5m])) / sum(rate(agentic_tests_total[5m]))
+        
+      - record: agentic:test_execution_rate_5m
+        expr: sum(rate(agentic_tests_total[5m]))
+        
+      - record: agentic:avg_test_duration_5m
+        expr: histogram_quantile(0.50, rate(agentic_test_duration_seconds_bucket[5m]))
+        
+      - record: agentic:p95_test_duration_5m
+        expr: histogram_quantile(0.95, rate(agentic_test_duration_seconds_bucket[5m]))
+        
+      - record: agentic:p99_test_duration_5m
+        expr: histogram_quantile(0.99, rate(agentic_test_duration_seconds_bucket[5m]))
+
+      # AI Model Performance Recording Rules
+      - record: agentic:ai_response_time_p50_5m
+        expr: histogram_quantile(0.50, rate(agentic_ai_response_duration_seconds_bucket[5m]))
+        
+      - record: agentic:ai_response_time_p95_5m
+        expr: histogram_quantile(0.95, rate(agentic_ai_response_duration_seconds_bucket[5m]))
+        
+      - record: agentic:ai_error_rate_5m
+        expr: sum(rate(agentic_ai_errors_total[5m])) / sum(rate(agentic_ai_requests_total[5m]))
+
+      # Service Health Recording Rules
+      - record: agentic:service_availability_5m
+        expr: avg_over_time(agentic_service_health_status[5m])
+        
+      - record: agentic:unhealthy_services_count
+        expr: count(agentic_service_health_status == 0)
+        
+      - record: agentic:total_services_count
+        expr: count(agentic_service_health_status)
+
+      # Database Performance Recording Rules
+      - record: agentic:db_connection_pool_usage
+        expr: hikaricp_connections_active / hikaricp_connections_max
+        
+      - record: agentic:db_query_time_p95_5m
+        expr: histogram_quantile(0.95, rate(agentic_database_query_duration_seconds_bucket[5m]))
+
+      # Kafka Performance Recording Rules
+      - record: agentic:kafka_message_rate_5m
+        expr: sum(rate(agentic_kafka_messages_produced_total[5m]))
+        
+      - record: agentic:kafka_consumer_lag_max
+        expr: max(agentic_kafka_consumer_lag)
+        
+      - record: agentic:kafka_error_rate_5m
+        expr: sum(rate(agentic_kafka_errors_total[5m]))
+
+      # System Resource Recording Rules
+      - record: agentic:cpu_usage_percent
+        expr: rate(process_cpu_seconds_total[5m]) * 100
+        
+      - record: agentic:memory_usage_gb
+        expr: process_resident_memory_bytes / 1024 / 1024 / 1024
+        
+      - record: agentic:jvm_heap_usage_percent
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} * 100
+
+      # Business Metrics Recording Rules
+      - record: agentic:tests_per_hour
+        expr: sum(rate(agentic_tests_total[1h])) * 3600
+        
+      - record: agentic:avg_tests_per_service_5m
+        expr: sum(rate(agentic_tests_total[5m])) by (service) / count(count by (service)(agentic_tests_total))
+        
+      - record: agentic:critical_test_failures_5m
+        expr: sum(rate(agentic_tests_failed_total{severity="critical"}[5m]))
+
+  - name: agentic-aggregation-rules
+    interval: 1m
+    rules:
+      # Hourly Aggregations
+      - record: agentic:test_success_rate_1h
+        expr: sum(rate(agentic_tests_passed_total[1h])) / sum(rate(agentic_tests_total[1h]))
+        
+      - record: agentic:test_execution_rate_1h
+        expr: sum(rate(agentic_tests_total[1h]))
+        
+      - record: agentic:ai_response_time_p95_1h
+        expr: histogram_quantile(0.95, rate(agentic_ai_response_duration_seconds_bucket[1h]))
+
+      # Daily Aggregations (for longer-term trending)
+      - record: agentic:test_success_rate_24h
+        expr: sum(rate(agentic_tests_passed_total[24h])) / sum(rate(agentic_tests_total[24h]))
+        
+      - record: agentic:total_tests_24h
+        expr: sum(increase(agentic_tests_total[24h]))
+        
+      - record: agentic:total_test_failures_24h
+        expr: sum(increase(agentic_tests_failed_total[24h]))
+
+  - name: agentic-slo-rules
+    interval: 1m
+    rules:
+      # SLO: 99% of tests should complete within 5 minutes
+      - record: agentic:slo_test_duration_compliance
+        expr: sum(rate(agentic_test_duration_seconds_bucket{le="300"}[5m])) / sum(rate(agentic_test_duration_seconds_bucket{le="+Inf"}[5m]))
+        
+      # SLO: 95% test success rate
+      - record: agentic:slo_test_success_rate
+        expr: sum(rate(agentic_tests_passed_total[5m])) / sum(rate(agentic_tests_total[5m]))
+        
+      # SLO: AI response time should be under 10 seconds for 99% of requests
+      - record: agentic:slo_ai_response_time_compliance
+        expr: sum(rate(agentic_ai_response_duration_seconds_bucket{le="10"}[5m])) / sum(rate(agentic_ai_response_duration_seconds_bucket{le="+Inf"}[5m]))
+        
+      # SLO: Service availability should be 99.9%
+      - record: agentic:slo_service_availability
+        expr: avg(agentic_service_health_status)
+
+  - name: agentic-capacity-planning-rules
+    interval: 5m
+    rules:
+      # Capacity Planning Metrics
+      - record: agentic:peak_concurrent_tests_1h
+        expr: max_over_time(agentic_tests_active[1h])
+        
+      - record: agentic:avg_concurrent_tests_1h
+        expr: avg_over_time(agentic_tests_active[1h])
+        
+      - record: agentic:resource_utilization_trend_1h
+        expr: avg_over_time(agentic:cpu_usage_percent[1h])
+        
+      - record: agentic:memory_utilization_trend_1h
+        expr: avg_over_time(agentic:memory_usage_gb[1h])
+        
+      # Growth Rate Calculations
+      - record: agentic:test_volume_growth_rate_7d
+        expr: (sum(rate(agentic_tests_total[1d])) - sum(rate(agentic_tests_total[1d] offset 7d))) / sum(rate(agentic_tests_total[1d] offset 7d)) * 100

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agentic-e2e-tester
+  labels:
+    name: agentic-e2e-tester
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/version: "1.0.0"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: agentic-resource-quota
+  namespace: agentic-e2e-tester
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    persistentvolumeclaims: "10"
+    services: "20"
+    secrets: "20"
+    configmaps: "20"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: agentic-limit-range
+  namespace: agentic-e2e-tester
+spec:
+  limits:
+  - default:
+      cpu: "1"
+      memory: "2Gi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "256Mi"
+    type: Container

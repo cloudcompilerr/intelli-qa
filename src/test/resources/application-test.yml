@@ -22,6 +22,25 @@ spring:
     bucket-name: test-bucket
 
 agentic:
+  test-environment:
+    active-environment: local
+    environments:
+      local:
+        data-isolation-enabled: true
+        cleanup-after-test: true
+        max-concurrent-tests: 2
+        test-timeout: PT5M
+
+  test-data:
+    enabled: true
+    auto-cleanup: true
+    cleanup-delay: PT1M
+    max-data-size-per-test: 100
+    enable-snapshots: true
+    max-snapshots: 5
+    enable-validation: true
+    validation-timeout: PT10S
+
   testing:
     execution:
       timeout: 30s

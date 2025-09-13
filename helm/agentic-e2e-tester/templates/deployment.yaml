@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentic-e2e-tester.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentic-e2e-tester.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    {{- toYaml .Values.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "agentic-e2e-tester.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.service.managementPort }}"
+        prometheus.io/path: "/actuator/prometheus"
+      labels:
+        {{- include "agentic-e2e-tester.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "agentic-e2e-tester.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+            - name: management
+              containerPort: {{ .Values.service.managementPort }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentic-e2e-tester.secretName" . }}
+                  key: postgres-username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentic-e2e-tester.secretName" . }}
+                  key: postgres-password
+            - name: COUCHBASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentic-e2e-tester.secretName" . }}
+                  key: couchbase-username
+            - name: COUCHBASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentic-e2e-tester.secretName" . }}
+                  key: couchbase-password
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentic-e2e-tester.secretName" . }}
+                  key: redis-password
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentic-e2e-tester.secretName" . }}
+                  key: api-key
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+            - name: logs
+              mountPath: /app/logs
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "agentic-e2e-tester.fullname" . }}-config
+        - name: logs
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -38,6 +38,17 @@ public class TestScenarioParser {
      * @return parsed test execution plan
      * @throws TestScenarioParsingException if parsing fails
      */
+    public TestExecutionPlan parse(String scenario) {
+        return parseScenario(scenario);
+    }
+
+    /**
+     * Parses a natural language test scenario into a structured test execution plan.
+     * 
+     * @param scenario the natural language test scenario
+     * @return parsed test execution plan
+     * @throws TestScenarioParsingException if parsing fails
+     */
     public TestExecutionPlan parseScenario(String scenario) {
         try {
             logger.info("Parsing test scenario: {}", scenario.substring(0, Math.min(100, scenario.length())));

@@ -64,6 +64,50 @@ management:
 
 # Application Configuration
 agentic:
+  # Test Environment Configuration
+  test-environment:
+    active-environment: local
+    environments:
+      local:
+        name: local
+        description: Local development environment
+        data-isolation-enabled: true
+        cleanup-after-test: true
+        max-concurrent-tests: 5
+        test-timeout: PT10M
+      dev:
+        name: dev
+        description: Development environment
+        data-isolation-enabled: true
+        cleanup-after-test: true
+        max-concurrent-tests: 10
+        test-timeout: PT15M
+      staging:
+        name: staging
+        description: Staging environment
+        data-isolation-enabled: true
+        cleanup-after-test: false
+        max-concurrent-tests: 20
+        test-timeout: PT30M
+      production:
+        name: production
+        description: Production environment
+        data-isolation-enabled: true
+        cleanup-after-test: false
+        max-concurrent-tests: 50
+        test-timeout: PT1H
+
+  # Test Data Configuration
+  test-data:
+    enabled: true
+    auto-cleanup: true
+    cleanup-delay: PT5M
+    max-data-size-per-test: 1000
+    enable-snapshots: true
+    max-snapshots: 10
+    enable-validation: true
+    validation-timeout: PT30S
+
   # Service Discovery Configuration
   service-discovery:
     auto-discovery-enabled: true

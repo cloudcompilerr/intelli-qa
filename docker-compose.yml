@@ -93,6 +93,43 @@ services:
       timeout: 10s
       retries: 3
 
+  # Agentic E2E Tester Application
+  agentic-tester:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentic-e2e-tester
+    depends_on:
+      - ollama
+      - postgres
+      - kafka
+      - couchbase
+    ports:
+      - "8080:8080"
+      - "8081:8081"  # Management port
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/vectordb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - COUCHBASE_CONNECTION_STRING=couchbase://couchbase
+      - COUCHBASE_USERNAME=Administrator
+      - COUCHBASE_PASSWORD=password
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+      - MANAGEMENT_SERVER_PORT=8081
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
   # Kafka UI for monitoring
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -100,7 +137,7 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8080:8080"
+      - "8082:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
@@ -123,6 +160,56 @@ services:
       - '--web.enable-lifecycle'
     restart: unless-stopped
 
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agentic-grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: agentic-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: agentic-nginx
+    depends_on:
+      - agentic-tester
+      - grafana
+      - kafka-ui
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/html:/usr/share/nginx/html
+    restart: unless-stopped
+
 volumes:
   ollama_data:
   postgres_data:
@@ -130,6 +217,8 @@ volumes:
   kafka_data:
   couchbase_data:
   prometheus_data:
+  grafana_data:
+  redis_data:
 
 networks:
   default:

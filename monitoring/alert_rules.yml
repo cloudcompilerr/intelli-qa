@@ -1,0 +1,234 @@
+groups:
+  - name: agentic-e2e-tester.rules
+    interval: 30s
+    rules:
+      # Application Health Alerts
+      - alert: AgenticTesterDown
+        expr: up{job="agentic-e2e-tester"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Agentic E2E Tester is down"
+          description: "Agentic E2E Tester has been down for more than 1 minute."
+          runbook_url: "https://docs.company.com/runbooks/agentic-tester-down"
+          
+      - alert: AgenticTesterHighMemoryUsage
+        expr: (process_resident_memory_bytes{job="agentic-e2e-tester"} / 1024 / 1024 / 1024) > 3
+        for: 5m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}GB, which is above the 3GB threshold."
+          
+      - alert: AgenticTesterHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="agentic-e2e-tester"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}%, which is above the 80% threshold."
+
+      # Test Execution Alerts
+      - alert: HighTestFailureRate
+        expr: (rate(agentic_tests_failed_total[5m]) / rate(agentic_tests_total[5m])) * 100 > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "High test failure rate detected"
+          description: "Test failure rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://docs.company.com/runbooks/high-test-failure-rate"
+          
+      - alert: CriticalTestFailureRate
+        expr: (rate(agentic_tests_failed_total[5m]) / rate(agentic_tests_total[5m])) * 100 > 25
+        for: 1m
+        labels:
+          severity: critical
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Critical test failure rate detected"
+          description: "Test failure rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          
+      - alert: LongRunningTest
+        expr: agentic_test_duration_seconds > 600
+        for: 0m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Long running test detected"
+          description: "Test {{ $labels.test_id }} has been running for {{ $value | humanizeDuration }}."
+          
+      - alert: NoTestsExecuted
+        expr: rate(agentic_tests_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "No tests executed recently"
+          description: "No tests have been executed in the last 10 minutes."
+
+      # AI Model Alerts
+      - alert: AIModelResponseSlow
+        expr: histogram_quantile(0.95, rate(agentic_ai_response_duration_seconds_bucket[5m])) > 30
+        for: 3m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "AI model response time is slow"
+          description: "95th percentile AI response time is {{ $value }}s, which is above 30s threshold."
+          
+      - alert: AIModelErrors
+        expr: rate(agentic_ai_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "AI model errors detected"
+          description: "AI model error rate is {{ $value }} errors/second."
+
+      # Service Health Alerts
+      - alert: ServiceUnhealthy
+        expr: agentic_service_health_status == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Service {{ $labels.service_name }} is unhealthy"
+          description: "Service {{ $labels.service_name }} has been unhealthy for more than 2 minutes."
+          
+      - alert: MultipleServicesUnhealthy
+        expr: count(agentic_service_health_status == 0) > 3
+        for: 1m
+        labels:
+          severity: critical
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Multiple services are unhealthy"
+          description: "{{ $value }} services are currently unhealthy."
+
+      # Database Alerts
+      - alert: DatabaseConnectionPoolExhausted
+        expr: hikaricp_connections_active{job="agentic-e2e-tester"} / hikaricp_connections_max{job="agentic-e2e-tester"} > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool usage is {{ $value | humanizePercentage }}."
+          
+      - alert: DatabaseSlowQueries
+        expr: histogram_quantile(0.95, rate(agentic_database_query_duration_seconds_bucket[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile database query time is {{ $value }}s."
+
+      # Kafka Alerts
+      - alert: KafkaConsumerLag
+        expr: agentic_kafka_consumer_lag > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "High Kafka consumer lag"
+          description: "Kafka consumer lag is {{ $value }} messages for topic {{ $labels.topic }}."
+          
+      - alert: KafkaProducerErrors
+        expr: rate(agentic_kafka_producer_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: agentic-e2e-tester
+        annotations:
+          summary: "Kafka producer errors detected"
+          description: "Kafka producer error rate is {{ $value }} errors/second."
+
+  - name: infrastructure.rules
+    interval: 30s
+    rules:
+      # Infrastructure Alerts
+      - alert: OllamaDown
+        expr: up{job="ollama"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: ollama
+        annotations:
+          summary: "Ollama LLM service is down"
+          description: "Ollama service has been down for more than 2 minutes."
+          
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgres
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been down for more than 1 minute."
+          
+      - alert: KafkaDown
+        expr: up{job="kafka"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: kafka
+        annotations:
+          summary: "Kafka broker is down"
+          description: "Kafka broker has been down for more than 1 minute."
+          
+      - alert: CouchbaseDown
+        expr: up{job="couchbase"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: couchbase
+        annotations:
+          summary: "Couchbase is down"
+          description: "Couchbase has been down for more than 2 minutes."
+          
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute."
+
+      # Disk Space Alerts
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}% on {{ $labels.device }}."
+          
+      - alert: CriticalDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk usage detected"
+          description: "Disk usage is {{ $value }}% on {{ $labels.device }}."

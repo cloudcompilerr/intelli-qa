@@ -1,0 +1,198 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentic-tester-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: application
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  - name: management
+    port: 8081
+    targetPort: management
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: application
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: ollama
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 11434
+    targetPort: http
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: ollama
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: postgres
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: kafka
+spec:
+  type: ClusterIP
+  ports:
+  - name: kafka
+    port: 9092
+    targetPort: kafka
+    protocol: TCP
+  - name: kafka-internal
+    port: 29092
+    targetPort: kafka-internal
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: zookeeper
+spec:
+  type: ClusterIP
+  ports:
+  - name: zookeeper
+    port: 2181
+    targetPort: zookeeper
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: zookeeper
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: couchbase-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: couchbase
+spec:
+  type: ClusterIP
+  ports:
+  - name: web-admin
+    port: 8091
+    targetPort: 8091
+    protocol: TCP
+  - name: api
+    port: 8092
+    targetPort: 8092
+    protocol: TCP
+  - name: internal
+    port: 8093
+    targetPort: 8093
+    protocol: TCP
+  - name: ssl
+    port: 18091
+    targetPort: 18091
+    protocol: TCP
+  - name: memcached
+    port: 11210
+    targetPort: 11210
+    protocol: TCP
+  - name: memcached-ssl
+    port: 11207
+    targetPort: 11207
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: couchbase
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: prometheus
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 9090
+    targetPort: http
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: prometheus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: grafana
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3000
+    targetPort: http
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: grafana

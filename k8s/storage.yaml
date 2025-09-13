@@ -1,0 +1,197 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agentic-postgres-pv
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: postgres
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agentic-ollama-pv
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: ollama
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/ollama
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-pvc
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: ollama
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agentic-kafka-pv
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: kafka
+spec:
+  capacity:
+    storage: 30Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/kafka
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-pvc
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: kafka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agentic-couchbase-pv
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: couchbase
+spec:
+  capacity:
+    storage: 40Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/couchbase
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: couchbase-pvc
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: couchbase
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 40Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agentic-prometheus-pv
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: prometheus
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/prometheus
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-pvc
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: prometheus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: agentic-grafana-pv
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: grafana
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-ssd
+  hostPath:
+    path: /data/grafana
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-pvc
+  namespace: agentic-e2e-tester
+  labels:
+    app.kubernetes.io/name: agentic-e2e-tester
+    app.kubernetes.io/component: grafana
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: fast-ssd

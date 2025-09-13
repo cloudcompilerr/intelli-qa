@@ -1,0 +1,236 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Agentic E2E Tester Dashboard",
+    "tags": ["agentic", "testing", "e2e"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Test Execution Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(agentic_tests_total[5m]))",
+            "legendFormat": "Tests/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "displayMode": "list",
+              "orientation": "horizontal"
+            },
+            "mappings": [],
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Test Success Rate",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "sum(rate(agentic_tests_passed_total[5m])) / sum(rate(agentic_tests_total[5m])) * 100",
+            "legendFormat": "Success Rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "steps": [
+                {
+                  "color": "red",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 80
+                },
+                {
+                  "color": "green",
+                  "value": 95
+                }
+              ]
+            },
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Active Tests",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "agentic_tests_active",
+            "legendFormat": "Active Tests"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Test Duration Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(agentic_test_duration_seconds_bucket[5m])",
+            "legendFormat": "{{le}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 5,
+        "title": "Service Health Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "agentic_service_health_status",
+            "legendFormat": "{{service_name}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        }
+      },
+      {
+        "id": 6,
+        "title": "AI Model Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(agentic_ai_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(agentic_ai_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        }
+      },
+      {
+        "id": 7,
+        "title": "Error Rate by Service",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum by (service) (rate(agentic_service_errors_total[5m]))",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 32
+        }
+      },
+      {
+        "id": 8,
+        "title": "Resource Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes",
+            "legendFormat": "Memory Usage"
+          },
+          {
+            "expr": "rate(process_cpu_seconds_total[5m]) * 100",
+            "legendFormat": "CPU Usage %"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 40
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "templating": {
+      "list": [
+        {
+          "name": "environment",
+          "type": "query",
+          "query": "label_values(agentic_tests_total, environment)",
+          "refresh": 1,
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "name": "Deployments",
+          "datasource": "Prometheus",
+          "expr": "changes(agentic_build_info[1h])",
+          "titleFormat": "Deployment",
+          "textFormat": "Version: {{version}}"
+        }
+      ]
+    },
+    "refresh": "30s",
+    "schemaVersion": 27,
+    "version": 1,
+    "links": []
+  }
+}
