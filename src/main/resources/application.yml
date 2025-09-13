@@ -173,6 +173,43 @@ agentic:
     default-token: ${AGENTIC_AUTH_TOKEN:#{null}}
     default-api-key: ${AGENTIC_AUTH_API_KEY:#{null}}
 
+  # CI/CD Integration Configuration
+  cicd:
+    auto-trigger-enabled: true
+    trigger-events:
+      - DEPLOYMENT_COMPLETED
+      - POST_DEPLOYMENT
+    supported-environments:
+      - staging
+      - production
+    default-test-timeout: PT30M
+    max-concurrent-tests: 5
+    webhook:
+      enabled: true
+      path: /webhook/deployment
+      secret: ${AGENTIC_WEBHOOK_SECRET:default-webhook-secret}
+      validate-signature: true
+      allowed-ips: []
+    pipelines:
+      jenkins:
+        platform: jenkins
+        base-url: ${JENKINS_BASE_URL:http://localhost:8080}
+        api-token: ${JENKINS_API_TOKEN:#{null}}
+        project-id: ${JENKINS_JOB_NAME:agentic-e2e-tests}
+        webhook-secret: ${JENKINS_WEBHOOK_SECRET:#{null}}
+        trigger-config:
+          auto-trigger-enabled: true
+          trigger-events:
+            - DEPLOYMENT_COMPLETED
+            - POST_DEPLOYMENT
+          trigger-environments:
+            - staging
+            - production
+          delay-after-deployment: PT2M
+          test-timeout: PT30M
+          max-retries: 3
+          wait-for-health-checks
+
 # Logging Configuration
 logging:
   level:
