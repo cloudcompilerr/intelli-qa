@@ -52,7 +52,7 @@ check_prerequisites() {
     fi
     
     # Check if Docker daemon is running
-    if ! docker info &> /dev/null; then
+    if ! docker compose version &> /dev/null; then
         log_error "Docker daemon is not running. Please start Docker first."
         exit 1
     fi
@@ -132,7 +132,7 @@ build_application() {
     # Build the application JAR
     if [ -f "pom.xml" ]; then
         log_info "Building with Maven..."
-        mvn clean package -DskipTests
+        mvn clean package -Dmaven.test.skip=true
     else
         log_warning "No pom.xml found, skipping application build"
     fi
