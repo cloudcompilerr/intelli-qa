@@ -2,10 +2,10 @@ spring:
   application:
     name: agentic-e2e-tester
   
-  # Spring AI Configuration for local Ollama
+  # Spring AI Configuration for Docker Ollama
   ai:
     ollama:
-      base-url: http://localhost:11434
+      base-url: ${OLLAMA_BASE_URL:http://ollama:11434}
       chat:
         model: codellama:7b
         options:
@@ -14,7 +14,7 @@ spring:
           max-tokens: 2000
     vectorstore:
       pgvector:
-        host: localhost
+        host: postgres
         port: 5432
         database: vectordb
         username: postgres
@@ -23,9 +23,9 @@ spring:
         table-name: vector_store
         dimensions: 1536
 
-  # Kafka Configuration
+  # Kafka Configuration for Docker
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:29092}
     consumer:
       group-id: agentic-e2e-tester
       auto-offset-reset: earliest
@@ -37,23 +37,25 @@ spring:
       acks: all
       retries: 3
 
-  # Couchbase Configuration
+  # Couchbase Configuration for Docker
   couchbase:
-    connection-string: couchbase://localhost
-    username: Administrator
-    password: password
+    connection-string: ${COUCHBASE_CONNECTION_STRING:couchbase://couchbase}
+    username: ${COUCHBASE_USERNAME:Administrator}
+    password: ${COUCHBASE_PASSWORD:password}
     bucket-name: test-data
 
   # Web Configuration
   webflux:
     base-path: /api/v1
 
-# Management and Actuator
+# Management and Actuator for Docker
 management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:8081}
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,metrics,prometheus}
   endpoint:
     health:
       show-details: always
@@ -62,40 +64,19 @@ management:
       prometheus:
         enabled: true
 
-# Application Configuration
+# Application Configuration for Docker
 agentic:
   # Test Environment Configuration
   test-environment:
-    active-environment: local
+    active-environment: docker
     environments:
-      local:
-        name: local
-        description: Local development environment
-        data-isolation-enabled: true
-        cleanup-after-test: true
-        max-concurrent-tests: 5
-        test-timeout: PT10M
-      dev:
-        name: dev
-        description: Development environment
+      docker:
+        name: docker
+        description: Docker containerized environment
         data-isolation-enabled: true
         cleanup-after-test: true
         max-concurrent-tests: 10
         test-timeout: PT15M
-      staging:
-        name: staging
-        description: Staging environment
-        data-isolation-enabled: true
-        cleanup-after-test: false
-        max-concurrent-tests: 20
-        test-timeout: PT30M
-      production:
-        name: production
-        description: Production environment
-        data-isolation-enabled: true
-        cleanup-after-test: false
-        max-concurrent-tests: 50
-        test-timeout: PT1H
 
   # Test Data Configuration
   test-data:
@@ -108,7 +89,7 @@ agentic:
     enable-validation: true
     validation-timeout: PT30S
 
-  # Service Discovery Configuration
+  # Service Discovery Configuration for Docker
   service-discovery:
     auto-discovery-enabled: true
     health-check-interval: 30
@@ -121,21 +102,21 @@ agentic:
     predefined-services:
       - service-id: order-service
         service-name: Order Service
-        base-url: http://localhost:8081
+        base-url: http://order-service:8080
         version: "1.0.0"
         metadata:
           type: microservice
           domain: order-management
       - service-id: payment-service
         service-name: Payment Service
-        base-url: http://localhost:8082
+        base-url: http://payment-service:8080
         version: "1.0.0"
         metadata:
           type: microservice
           domain: payment-processing
       - service-id: inventory-service
         service-name: Inventory Service
-        base-url: http://localhost:8083
+        base-url: http://inventory-service:8080
         version: "1.0.0"
         metadata:
           type: microservice
@@ -175,50 +156,19 @@ agentic:
 
   # CI/CD Integration Configuration
   cicd:
-    auto-trigger-enabled: true
-    trigger-events:
-      - DEPLOYMENT_COMPLETED
-      - POST_DEPLOYMENT
-    supported-environments:
-      - staging
-      - production
-    default-test-timeout: PT30M
-    max-concurrent-tests: 5
+    auto-trigger-enabled: false
     webhook:
-      enabled: true
-      path: /webhook/deployment
-      secret: ${AGENTIC_WEBHOOK_SECRET:default-webhook-secret}
-      validate-signature: true
-      allowed-ips: []
-    pipelines:
-      jenkins:
-        platform: jenkins
-        base-url: ${JENKINS_BASE_URL:http://localhost:8080}
-        api-token: ${JENKINS_API_TOKEN:#{null}}
-        project-id: ${JENKINS_JOB_NAME:agentic-e2e-tests}
-        webhook-secret: ${JENKINS_WEBHOOK_SECRET:#{null}}
-        trigger-config:
-          auto-trigger-enabled: true
-          trigger-events:
-            - DEPLOYMENT_COMPLETED
-            - POST_DEPLOYMENT
-          trigger-environments:
-            - staging
-            - production
-          delay-after-deployment: PT2M
-          test-timeout: PT30M
-          max-retries: 3
-          wait-for-health-checks: true
+      enabled: false
 
-# Logging Configuration
+# Logging Configuration for Docker
 logging:
   level:
-    com.agentic: DEBUG
-    org.springframework.ai: DEBUG
-    org.springframework.kafka: INFO
-    com.couchbase: INFO
+    com.agentic: INFO
+    org.springframework.ai: WARN
+    org.springframework.kafka: WARN
+    com.couchbase: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
-    name: logs/agentic-e2e-tester.log
+    name: /app/logs/agentic-e2e-tester.log

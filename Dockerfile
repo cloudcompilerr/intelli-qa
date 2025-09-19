@@ -1,5 +1,5 @@
 # Multi-stage build for Agentic E2E Tester
-FROM maven:3.9-eclipse-temurin-17 AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 # Set working directory
 WORKDIR /app
@@ -12,10 +12,10 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 
 # Build the application
-RUN mvn clean package -DskipTests -B
+RUN mvn clean package -Dmaven.test.skip=true -B
 
 # Runtime stage
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 # Install curl for health checks
 RUN apk add --no-cache curl
@@ -28,7 +28,7 @@ RUN addgroup -g 1001 -S appgroup && \
 WORKDIR /app
 
 # Copy the built JAR from builder stage
-COPY --from=builder /app/target/agentic-e2e-tester-*.jar app.jar
+COPY --from=builder /app/target/e2e-tester-0.0.1-SNAPSHOT.jar app.jar
 
 # Create directories for logs and config
 RUN mkdir -p /app/logs /app/config && \
