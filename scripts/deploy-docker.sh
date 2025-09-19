@@ -46,8 +46,8 @@ check_prerequisites() {
     fi
     
     # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        log_error "Docker Compose is not installed. Please install Docker Compose first."
+    if ! docker compose version &> /dev/null; then
+        log_error "Docker Compose is not available. Please install Docker with Compose plugin."
         exit 1
     fi
     
@@ -152,11 +152,11 @@ start_services() {
     
     # Pull latest images
     log_info "Pulling latest images..."
-    docker-compose $COMPOSE_FILES pull
+    docker compose $COMPOSE_FILES pull
     
     # Start services
     log_info "Starting containers..."
-    docker-compose $COMPOSE_FILES up -d
+    docker compose $COMPOSE_FILES up -d
     
     log_success "Services started"
 }
@@ -167,11 +167,11 @@ wait_for_services() {
     
     # Wait for PostgreSQL
     log_info "Waiting for PostgreSQL..."
-    timeout 60 bash -c 'until docker-compose exec -T postgres pg_isready -U postgres; do sleep 2; done'
+    timeout 60 bash -c 'until docker compose exec -T postgres pg_isready -U postgres; do sleep 2; done'
     
     # Wait for Kafka
     log_info "Waiting for Kafka..."
-    timeout 60 bash -c 'until docker-compose exec -T kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092 &>/dev/null; do sleep 2; done'
+    timeout 60 bash -c 'until docker compose exec -T kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092 &>/dev/null; do sleep 2; done'
     
     # Wait for Ollama
     log_info "Waiting for Ollama..."
@@ -194,13 +194,13 @@ setup_initial_data() {
     
     # Download and setup Ollama models
     log_info "Setting up AI models..."
-    docker-compose exec ollama ollama pull codellama:7b
-    docker-compose exec ollama ollama pull mistral:7b
+    docker compose exec ollama ollama pull codellama:7b
+    docker compose exec ollama ollama pull mistral:7b
     
     # Initialize vector database
     if [ -f "scripts/init-vector-db.sql" ]; then
         log_info "Initializing vector database..."
-        docker-compose exec -T postgres psql -U postgres -d vectordb < scripts/init-vector-db.sql
+        docker compose exec -T postgres psql -U postgres -d vectordb < scripts/init-vector-db.sql
     fi
     
     log_success "Initial data setup complete"
@@ -227,7 +227,7 @@ run_health_checks() {
     fi
     
     # Check PostgreSQL
-    if docker-compose exec -T postgres pg_isready -U postgres &>/dev/null; then
+    if docker compose exec -T postgres pg_isready -U postgres &>/dev/null; then
         log_success "✓ PostgreSQL is healthy"
     else
         log_error "✗ PostgreSQL health check failed"
@@ -235,7 +235,7 @@ run_health_checks() {
     fi
     
     # Check Kafka
-    if docker-compose exec -T kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092 &>/dev/null; then
+    if docker compose exec -T kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092 &>/dev/null; then
         log_success "✓ Kafka is healthy"
     else
         log_error "✗ Kafka health check failed"
@@ -273,14 +273,14 @@ display_service_urls() {
 # Function to show logs
 show_logs() {
     log_info "Showing service logs (press Ctrl+C to exit)..."
-    docker-compose $COMPOSE_FILES logs -f
+    docker compose $COMPOSE_FILES logs -f
 }
 
 # Function to cleanup
 cleanup() {
     log_info "Cleaning up..."
     cd "$PROJECT_ROOT"
-    docker-compose $COMPOSE_FILES down
+    docker compose $COMPOSE_FILES down
     log_success "Cleanup complete"
 }
 
@@ -351,13 +351,13 @@ case $COMMAND in
     "stop")
         setup_environment
         log_info "Stopping services..."
-        docker-compose $COMPOSE_FILES stop
+        docker compose $COMPOSE_FILES stop
         log_success "Services stopped"
         ;;
     "restart")
         setup_environment
         log_info "Restarting services..."
-        docker-compose $COMPOSE_FILES restart
+        docker compose $COMPOSE_FILES restart
         wait_for_services
         run_health_checks
         log_success "Services restarted"

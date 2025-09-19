@@ -23,13 +23,13 @@ git clone <repository-url>
 cd agentic-e2e-tester
 
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Check service status
-docker-compose ps
+docker compose ps
 
 # View logs
-docker-compose logs -f agentic-tester
+docker compose logs -f agentic-tester
 ```
 
 ### Production Deployment
@@ -48,7 +48,7 @@ echo "$(openssl rand -base64 32)" > secrets/redis_password.txt
 echo "$(openssl rand -base64 32)" > secrets/api_key.txt
 
 # Deploy with production overrides
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### Service URLs
